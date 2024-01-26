@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/SergeyMilch/crypto-rate-fetcher/pkg/server"
 )
@@ -20,7 +21,16 @@ func GetRate(pair string) (float64, error) {
         return 0, fmt.Errorf("invalid currency pair format: %s", pair)
     }
 
-    resp, err := http.Get(fmt.Sprintf("http://localhost:3001/api/v1/rates?pairs=%s", pair))
+    // Получение URL из переменных окружения
+    apiURL := os.Getenv("API_URL")
+    if apiURL == "" {
+        apiURL = "http://localhost:3001/api/v1/rates" // URL по умолчанию
+    }
+
+    // Формирование запроса
+    requestURL := fmt.Sprintf("%s?pairs=%s", apiURL, pair)
+
+    resp, err := http.Get(requestURL)
     if err != nil {
         log.Printf("Error making GET request for %s: %v", pair, err)
         return 0, fmt.Errorf("error making GET request: %v", err)

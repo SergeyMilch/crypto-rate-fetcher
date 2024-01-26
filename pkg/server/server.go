@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"regexp"
 	"strings"
 )
@@ -79,22 +80,32 @@ func queryBinanceAPI(symbol string) (*BinanceResponse, error) {
 
 	formattedSymbol := strings.ReplaceAll(symbol, "-", "")
 
-    url := fmt.Sprintf("https://api.binance.com/api/v3/ticker/price?symbol=%s", formattedSymbol)
+    // Получение базового URL из переменных окружения
+    // Например: "https://api.binance.com/api/v3/ticker/price"
+    baseURL := os.Getenv("BINANCE_API_URL")
+    if baseURL == "" {
+        log.Fatal("BINANCE_API_URL environment variable is not set. Please set it to the Binance API URL.")
+    }
+
+    // Формирование полного URL
+    url := fmt.Sprintf("%s?symbol=%s", baseURL, formattedSymbol)
 
     resp, err := http.Get(url)
     if err != nil {
+        log.Printf("Error making request to Binance for symbol %s: %v", formattedSymbol, err)
         return nil, fmt.Errorf("error making request to Binance: %w", err)
     }
     defer resp.Body.Close()
 
     if resp.StatusCode != http.StatusOK {
+        log.Printf("Binance API returned non-OK status for symbol %s: %d", formattedSymbol, resp.StatusCode)
         return nil, fmt.Errorf("Binance API returned non-OK status: %d", resp.StatusCode)
     }
 
     var binanceResp BinanceResponse
-
     err = json.NewDecoder(resp.Body).Decode(&binanceResp)
     if err != nil {
+        log.Printf("Error decoding Binance response for symbol %s: %v", formattedSymbol, err)
         return nil, fmt.Errorf("error decoding Binance response: %w", err)
     }
 
